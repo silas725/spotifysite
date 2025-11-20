@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Spotify Callback</title>
+</head>
+<body>
+  <p>Processing login...</p>
+  <script>
+    (function() {
+      function parseHash(hash) {
+        if (!hash) return {};
+        return hash.substring(1).split("&").reduce(function(acc, part) {
+          var kv = part.split("=");
+          acc[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || "");
+          return acc;
+        }, {});
+      }
+
+      const data = parseHash(window.location.hash);
+      if (data.access_token) {
+        const token = data.access_token;
+        const expiresIn = parseInt(data.expires_in || "3600", 10);
+        localStorage.setItem("sp_token", token);
+        localStorage.setItem("sp_token_expires", Date.now() + expiresIn * 1000);
+        window.location.replace("./");
+      } else {
+        document.body.innerHTML = "<p>Login failed — no token. Close and try again.</p>";
+      }
+    })();
+  </script>
+</body>
+</html>
