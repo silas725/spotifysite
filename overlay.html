@@ -50,6 +50,7 @@
     <div class="container" id="ov-now"></div>
     <script>
     function formatSong(np) {
+      if (!np.name) return "<div>Not playing…</div>";
       return `
         <img src="${np.albumArt}" alt="Album art">
         <div class="track">${np.name}</div>
@@ -60,18 +61,21 @@
       `;
     }
     function updateOverlay() {
-      const el = document.getElementById('ov-now');
-      const raw = localStorage.getItem('overlay_nowplaying');
-      if (!raw) { el.innerHTML = '<div>Not playing…</div>'; return; }
-      const np = JSON.parse(raw);
-
-      el.innerHTML = formatSong(np);
-
-      // Progress bar
-      const bar = document.getElementById('progress-bar');
-      const songElapsed = Math.min(Date.now() - np.timestamp + np.position, np.duration);
-      const pct = Math.max(0, Math.min(songElapsed / np.duration, 1)) * 100;
-      bar.style.width = pct + "%";
+      fetch('http://localhost:3131/nowplaying')
+        .then(r => r.json())
+        .then(np => {
+          const el = document.getElementById('ov-now');
+          el.innerHTML = formatSong(np);
+          // Progress bar
+          if (np.duration) {
+            const bar = document.getElementById('progress-bar');
+            const songElapsed = Math.min(Date.now() - np.timestamp + np.position, np.duration);
+            const pct = Math.max(0, Math.min(songElapsed / np.duration, 1)) * 100;
+            bar.style.width = pct + "%";
+          }
+        }).catch(()=>{
+          document.getElementById('ov-now').innerHTML = "<div>No data from main player...</div>";
+        });
     }
     setInterval(updateOverlay, 1000);
     updateOverlay();
