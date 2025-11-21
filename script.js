@@ -1,4 +1,3 @@
-// PKCE Spotify Web Playback SDK starter
 const CLIENT_ID = "6f835ac6515e4555bdc4ab07955a2d80";
 const REDIRECT_URI = "https://silas725.github.io/spotifysite/callback";
 const SCOPES = [
@@ -9,7 +8,6 @@ const SCOPES = [
   "user-modify-playback-state"
 ];
 
-// UI refs
 const statusEl = document.getElementById("status");
 const btnLogin = document.getElementById("btnLogin");
 const btnLogout = document.getElementById("btnLogout");
@@ -25,7 +23,6 @@ function bufToBase64Url(buffer) {
 async function generatePKCECodes() {
   const array = new Uint8Array(64);
   window.crypto.getRandomValues(array);
-  // create a URL-safe verifier string
   let v = btoa(String.fromCharCode.apply(null, Array.from(array))).replace(/\W/g, '').slice(0, 128);
   const enc = new TextEncoder();
   const digest = await crypto.subtle.digest('SHA-256', enc.encode(v));
@@ -127,7 +124,6 @@ async function handleRedirectCallback() {
     try {
       const tokenJson = await exchangeCodeForToken(code, verifier);
       saveTokenResponse(tokenJson);
-      // remove code from URL for cleanliness
       history.replaceState({}, document.title, '/spotifysite/');
       return true;
     } catch (err) {
@@ -141,12 +137,21 @@ async function handleRedirectCallback() {
 
 let progressInterval;
 
-// UPDATED showNowPlaying persists info to localStorage for overlay use
+function postToOverlayBridge(nowPlaying) {
+  fetch('http://localhost:3131/track', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(nowPlaying)
+  }).catch(()=>{});
+}
+
 function showNowPlaying(state) {
   if (!state) {
     nowEl.innerHTML = "";
     if (progressInterval) clearInterval(progressInterval);
     localStorage.removeItem('overlay_nowplaying');
+    // Bridge update (clear info)
+    postToOverlayBridge({});
     return;
   }
 
@@ -155,7 +160,6 @@ function showNowPlaying(state) {
   const duration = track.duration_ms;
   let position = state.position;
 
-  // Save for overlay
   const nowPlaying = {
     name: track.name,
     artists: artists,
@@ -165,26 +169,23 @@ function showNowPlaying(state) {
     timestamp: Date.now()
   };
   localStorage.setItem('overlay_nowplaying', JSON.stringify(nowPlaying));
+  // Send to Node bridge!
+  postToOverlayBridge(nowPlaying);
 
   nowEl.innerHTML = `
     <div style="width:100%; max-width:260px; margin:auto; text-align:center; font-family:sans-serif;">
-      
-      <img src="${track.album.images[0].url}" 
+      <img src="${track.album.images[0].url}"
            style="width:100%; border-radius:12px; margin-bottom:12px;">
-      
       <div style="font-size:16px; font-weight:600;">${track.name}</div>
       <div style="font-size:13px; color:#888; margin-bottom:8px;">${artists}</div>
-
-      <div id="progress-container" 
+      <div id="progress-container"
            style="width:100%; height:6px; background:#ccc; border-radius:4px; overflow:hidden;">
-        <div id="progress-bar" 
+        <div id="progress-bar"
              style="height:100%; width:0%; background:#1DB954;"></div>
       </div>
-
     </div>
   `;
 
-  // progress bar logic
   const bar = document.getElementById("progress-bar");
 
   if (progressInterval) clearInterval(progressInterval);
@@ -237,7 +238,6 @@ async function updateUI() {
   }
 }
 
-// Main IIFE
 (async () => {
   const handled = await handleRedirectCallback();
   if (!handled) await updateUI();
