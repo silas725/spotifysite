@@ -243,5 +243,3 @@ async function updateUI() {
   if (!handled) await updateUI();
   else await updateUI();
 })();
-
-
