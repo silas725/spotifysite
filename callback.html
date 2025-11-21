@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Spotify Callback</title>
+</head>
+<body>
+  <script>
+    const hash = window.location.hash;
+    window.location.href = "/spotifysite/?"+hash.substring(1);
+  </script>
+</body>
+</html>
