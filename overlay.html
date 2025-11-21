@@ -1,64 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Spotify Overlay</title>
-  <style>
-    body {
-      background: transparent;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-
-    #container {
-      width: 260px;
-      margin: auto;
-      margin-top: 10px;
-    }
-
-    #album {
-      width: 100%;
-      border-radius: 12px;
-    }
-
-    #track {
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-
-    #artist {
-      font-size: 14px;
-      opacity: 0.8;
-      margin-bottom: 8px;
-    }
-
-    #bar-bg {
-      width: 100%;
-      height: 6px;
-      background: #444;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    #bar {
-      width: 0%;
-      height: 100%;
-      background: #1DB954;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Spotify Overlay</title>
+    <style>
+        body {
+            background: #111;
+            color: #fff;
+            font-family: sans-serif;
+            margin: 0; 
+            padding: 0;
+            text-align: center;
+        }
+        .container {
+            width: 250px;
+            margin: 0 auto;
+            padding-top: 10px;
+        }
+        img {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .track {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .artist {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+        #progress-container {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #1DB954;
+            transition: width 0.2s linear;
+        }
+    </style>
 </head>
 <body>
-  <div id="container">
-    <img id="album" src="">
-    <div id="track">Loading…</div>
-    <div id="artist"></div>
-    <div id="bar-bg"><div id="bar"></div></div>
-  </div>
+    <div class="container" id="ov-now"></div>
+    <script>
+    function formatSong(np) {
+      return `
+        <img src="${np.albumArt}" alt="Album art">
+        <div class="track">${np.name}</div>
+        <div class="artist">${np.artists}</div>
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+      `;
+    }
+    function updateOverlay() {
+      const el = document.getElementById('ov-now');
+      const raw = localStorage.getItem('overlay_nowplaying');
+      if (!raw) { el.innerHTML = '<div>Not playing…</div>'; return; }
+      const np = JSON.parse(raw);
 
-  <script src="overlay.js"></script>
+      el.innerHTML = formatSong(np);
+
+      // Progress bar
+      const bar = document.getElementById('progress-bar');
+      const songElapsed = Math.min(Date.now() - np.timestamp + np.position, np.duration);
+      const pct = Math.max(0, Math.min(songElapsed / np.duration, 1)) * 100;
+      bar.style.width = pct + "%";
+    }
+    setInterval(updateOverlay, 1000);
+    updateOverlay();
+    </script>
 </body>
 </html>
