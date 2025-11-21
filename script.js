@@ -138,13 +138,51 @@ async function handleRedirectCallback(){
   }
   return false;
 }
+let progressInterval;
 
-function showNowPlaying(state){
-  if(!state){ nowEl.innerText = ''; return; }
-  const t = state.track_window && state.track_window.current_track;
-  if(t) nowEl.innerHTML = '<strong>Now playing:</strong> ' + t.name + ' — ' + t.artists.map(a=>a.name).join(', ');
-  else nowEl.innerText = 'No track playing';
+function showNowPlaying(state) {
+  if (!state) {
+    nowEl.innerHTML = "";
+    if (progressInterval) clearInterval(progressInterval);
+    return;
+  }
+
+  const track = state.track_window.current_track;
+  const artists = track.artists.map(a => a.name).join(", ");
+  const duration = track.duration_ms;
+  let position = state.position;
+
+  nowEl.innerHTML = `
+    <div style="width:100%; max-width:260px; margin:auto; text-align:center; font-family:sans-serif;">
+      
+      <img src="${track.album.images[0].url}" 
+           style="width:100%; border-radius:12px; margin-bottom:12px;">
+      
+      <div style="font-size:16px; font-weight:600;">${track.name}</div>
+      <div style="font-size:13px; color:#888; margin-bottom:8px;">${artists}</div>
+
+      <div id="progress-container" 
+           style="width:100%; height:6px; background:#ccc; border-radius:4px; overflow:hidden;">
+        <div id="progress-bar" 
+             style="height:100%; width:0%; background:#1DB954;"></div>
+      </div>
+
+    </div>
+  `;
+
+  // progress bar logic
+  const bar = document.getElementById("progress-bar");
+
+  if (progressInterval) clearInterval(progressInterval);
+
+  progressInterval = setInterval(() => {
+    position += 1000;
+    const pct = Math.min(position / duration, 1) * 100;
+    bar.style.width = pct + "%";
+  }, 1000);
 }
+
+
 
 function initPlayer(token){
   if(!token) return;
