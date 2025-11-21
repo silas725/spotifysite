@@ -243,3 +243,13 @@ async function updateUI() {
   if (!handled) await updateUI();
   else await updateUI();
 })();
+
+{
+  "name": "Track",
+  "artists": "Artist",
+  "albumArt": "https://...",
+  "duration": 200000,
+  "position": 80000,
+  "timestamp": 1700000000000,
+  "paused": true   // or false
+}
