@@ -18,29 +18,29 @@ const nowEl = document.getElementById("now");
 function bufToBase64Url(buffer) {
   let bytes = new Uint8Array(buffer);
   let str = '';
-  for (let i=0;i<bytes.byteLength;i++) str += String.fromCharCode(bytes[i]);
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/,'');
+  for (let i = 0; i < bytes.byteLength; i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 async function generatePKCECodes() {
   const array = new Uint8Array(64);
   window.crypto.getRandomValues(array);
   // create a URL-safe verifier string
-  let v = btoa(String.fromCharCode.apply(null, Array.from(array))).replace(/\W/g,'').slice(0,128);
+  let v = btoa(String.fromCharCode.apply(null, Array.from(array))).replace(/\W/g, '').slice(0, 128);
   const enc = new TextEncoder();
   const digest = await crypto.subtle.digest('SHA-256', enc.encode(v));
   const challenge = bufToBase64Url(digest);
   return { verifier: v, challenge };
 }
 
-function saveItem(k,v){localStorage.setItem(k,v);}
-function getItem(k){return localStorage.getItem(k);}
-function removeItem(k){localStorage.removeItem(k);}
+function saveItem(k, v) { localStorage.setItem(k, v); }
+function getItem(k) { return localStorage.getItem(k); }
+function removeItem(k) { localStorage.removeItem(k); }
 
 btnLogin.addEventListener('click', async () => {
   const { verifier, challenge } = await generatePKCECodes();
   saveItem('pkce_verifier', verifier);
-  const state = Math.random().toString(36).substring(2,12);
+  const state = Math.random().toString(36).substring(2, 12);
   saveItem('pkce_state', state);
 
   const authUrl = new URL('https://accounts.spotify.com/authorize');
@@ -64,16 +64,16 @@ btnLogout.addEventListener('click', () => {
   updateUI();
 });
 
-function parseQuery(qs){
-  if(!qs) return {};
-  return qs.replace(/^\?/,'').split('&').reduce((acc,p)=>{
-    const [k,v] = p.split('=');
-    acc[decodeURIComponent(k)] = decodeURIComponent(v||'');
+function parseQuery(qs) {
+  if (!qs) return {};
+  return qs.replace(/^\?/, '').split('&').reduce((acc, p) => {
+    const [k, v] = p.split('=');
+    acc[decodeURIComponent(k)] = decodeURIComponent(v || '');
     return acc;
-  },{});
+  }, {});
 }
 
-async function exchangeCodeForToken(code, verifier){
+async function exchangeCodeForToken(code, verifier) {
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code: code,
@@ -88,49 +88,49 @@ async function exchangeCodeForToken(code, verifier){
     body: body.toString()
   });
 
-  if(!resp.ok){
+  if (!resp.ok) {
     const txt = await resp.text();
     throw new Error('Token exchange failed: ' + resp.status + ' ' + txt);
   }
   return await resp.json();
 }
 
-function saveTokenResponse(json){
-  const expiresAt = Date.now() + (json.expires_in||3600)*1000;
+function saveTokenResponse(json) {
+  const expiresAt = Date.now() + (json.expires_in || 3600) * 1000;
   saveItem('sp_access_token', json.access_token);
-  if(json.refresh_token) saveItem('sp_refresh_token', json.refresh_token);
+  if (json.refresh_token) saveItem('sp_refresh_token', json.refresh_token);
   saveItem('sp_token_expires', expiresAt);
 }
 
-function getToken(){
+function getToken() {
   const t = getItem('sp_access_token');
   const exp = getItem('sp_token_expires');
-  if(!t || !exp) return null;
-  if(Date.now() > Number(exp)){ removeItem('sp_access_token'); removeItem('sp_token_expires'); return null; }
+  if (!t || !exp) return null;
+  if (Date.now() > Number(exp)) { removeItem('sp_access_token'); removeItem('sp_token_expires'); return null; }
   return t;
 }
 
-async function handleRedirectCallback(){
+async function handleRedirectCallback() {
   const qs = window.location.search;
-  if(!qs) return false;
+  if (!qs) return false;
   const params = parseQuery(qs);
-  if(params.error){ statusEl.textContent = 'Auth error: ' + params.error; return true; }
-  if(params.code){
+  if (params.error) { statusEl.textContent = 'Auth error: ' + params.error; return true; }
+  if (params.code) {
     const code = params.code;
     const state = params.state;
     const savedState = getItem('pkce_state');
-    if(!savedState || savedState !== state){ statusEl.textContent = 'State mismatch'; return true; }
+    if (!savedState || savedState !== state) { statusEl.textContent = 'State mismatch'; return true; }
     const verifier = getItem('pkce_verifier');
-    if(!verifier){ statusEl.textContent = 'Missing PKCE verifier'; return true; }
+    if (!verifier) { statusEl.textContent = 'Missing PKCE verifier'; return true; }
 
     statusEl.textContent = 'Exchanging code for token...';
-    try{
+    try {
       const tokenJson = await exchangeCodeForToken(code, verifier);
       saveTokenResponse(tokenJson);
       // remove code from URL for cleanliness
       history.replaceState({}, document.title, '/spotifysite/');
       return true;
-    } catch(err){
+    } catch (err) {
       statusEl.textContent = 'Token exchange failed: ' + err.message;
       console.error(err);
       return true;
@@ -138,12 +138,15 @@ async function handleRedirectCallback(){
   }
   return false;
 }
+
 let progressInterval;
 
+// UPDATED showNowPlaying persists info to localStorage for overlay use
 function showNowPlaying(state) {
   if (!state) {
     nowEl.innerHTML = "";
     if (progressInterval) clearInterval(progressInterval);
+    localStorage.removeItem('overlay_nowplaying');
     return;
   }
 
@@ -151,6 +154,17 @@ function showNowPlaying(state) {
   const artists = track.artists.map(a => a.name).join(", ");
   const duration = track.duration_ms;
   let position = state.position;
+
+  // Save for overlay
+  const nowPlaying = {
+    name: track.name,
+    artists: artists,
+    albumArt: track.album.images[0].url,
+    duration: duration,
+    position: position,
+    timestamp: Date.now()
+  };
+  localStorage.setItem('overlay_nowplaying', JSON.stringify(nowPlaying));
 
   nowEl.innerHTML = `
     <div style="width:100%; max-width:260px; margin:auto; text-align:center; font-family:sans-serif;">
@@ -182,12 +196,10 @@ function showNowPlaying(state) {
   }, 1000);
 }
 
-
-
-function initPlayer(token){
-  if(!token) return;
-  if(typeof Spotify === 'undefined'){
-    const s = document.createElement('script'); s.src='https://sdk.scdn.co/spotify-player.js'; document.body.appendChild(s);
+function initPlayer(token) {
+  if (!token) return;
+  if (typeof Spotify === 'undefined') {
+    const s = document.createElement('script'); s.src = 'https://sdk.scdn.co/spotify-player.js'; document.body.appendChild(s);
   }
 
   window.onSpotifyWebPlaybackSDKReady = () => {
@@ -203,7 +215,7 @@ function initPlayer(token){
         method: 'PUT',
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ device_ids: [device_id], play: false })
-      }).catch(()=>{});
+      }).catch(() => { });
     });
 
     player.addListener('player_state_changed', state => showNowPlaying(state));
@@ -211,22 +223,23 @@ function initPlayer(token){
   };
 }
 
-async function updateUI(){
+async function updateUI() {
   const token = getToken();
-  if(token){
-    btnLogin.style.display='none'; btnLogout.style.display='inline-block';
-    try{
-      const me = await fetch('https://api.spotify.com/v1/me', { headers: { Authorization: 'Bearer ' + token } }).then(r=>r.json());
+  if (token) {
+    btnLogin.style.display = 'none'; btnLogout.style.display = 'inline-block';
+    try {
+      const me = await fetch('https://api.spotify.com/v1/me', { headers: { Authorization: 'Bearer ' + token } }).then(r => r.json());
       statusEl.textContent = 'Logged in as ' + (me.display_name || me.id);
-    }catch(e){ statusEl.textContent = 'Logged in (API call failed)'; }
+    } catch (e) { statusEl.textContent = 'Logged in (API call failed)'; }
     initPlayer(token);
   } else {
-    btnLogin.style.display='inline-block'; btnLogout.style.display='none'; statusEl.textContent='Not logged in';
+    btnLogin.style.display = 'inline-block'; btnLogout.style.display = 'none'; statusEl.textContent = 'Not logged in';
   }
 }
 
-(async ()=>{
+// Main IIFE
+(async () => {
   const handled = await handleRedirectCallback();
-  if(!handled) await updateUI();
+  if (!handled) await updateUI();
   else await updateUI();
 })();
