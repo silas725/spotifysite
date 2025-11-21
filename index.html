@@ -1,15 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Spotify Web Player</title>
+  <meta charset="utf-8" />
+  <title>Spotify Web Playback (PKCE)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; max-width:720px; margin:auto; }
+    button { padding:10px 16px; font-size:16px; margin:6px; }
+    #now { margin-top:16px; }
+    pre { background:#f4f4f4; padding:10px; }
+  </style>
 </head>
 <body>
-  <h1>Spotify Web Player</h1>
-
-  <button id="loginBtn">Login with Spotify</button>
-
-  <div id="playerInfo"></div>
+  <h1>Spotify Web Playback (PKCE)</h1>
+  <p id="status">Not logged in</p>
+  <button id="btnLogin">Log in with Spotify</button>
+  <button id="btnLogout" style="display:none">Logout</button>
+  <div id="now"></div>
 
   <script src="script.js"></script>
 </body>
