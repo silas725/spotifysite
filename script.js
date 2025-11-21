@@ -1,4 +1,4 @@
-const clientId = "e32592ce80264be3b31976f5f639d70b";
+const clientId = "6f835ac6515e4555bdc4ab07955a2d80";
 const redirectUri = "https://silas725.github.io/spotifysite/callback";
 const scope = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state";
 
