@@ -195,8 +195,16 @@ function showNowPlaying(state) {
     const pct = Math.min(position / duration, 1) * 100;
     bar.style.width = pct + "%";
   }, 1000);
+  
 }
-
+  "name": "Track",
+  "artists": "Artist",
+  "albumArt": "https://...",
+  "duration": 200000,
+  "position": 80000,
+  "timestamp": 1700000000000,
+  "paused": true   // or false
+}
 function initPlayer(token) {
   if (!token) return;
   if (typeof Spotify === 'undefined') {
