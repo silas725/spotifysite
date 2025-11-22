@@ -197,14 +197,7 @@ function showNowPlaying(state) {
   }, 1000);
   
 }
-  "name": "Track",
-  "artists": "Artist",
-  "albumArt": "https://...",
-  "duration": 200000,
-  "position": 80000,
-  "timestamp": 1700000000000,
-  "paused": true   // or false
-}
+ 
 function initPlayer(token) {
   if (!token) return;
   if (typeof Spotify === 'undefined') {
